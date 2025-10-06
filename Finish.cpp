@@ -1,201 +1,186 @@
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
-#include <map>
-#include <functional>
-#include <vector>
-#include <memory>
+#include <limits>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <cstdlib>
+#endif
 
 using namespace std;
 
-// Abstract class for operations
-class Operation {
-public:
-    virtual ~Operation() = default;
-    virtual double execute(const vector<double>& operands) = 0;
-    virtual int getOperandCount() const = 0;
-    virtual string getDescription() const = 0;
-};
-
-// Classes for specific operations
-class Addition : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 2) throw runtime_error("2 operands required");
-        return operands[0] + operands[1];
-    }
-    int getOperandCount() const override { return 2; }
-    string getDescription() const override { return "Addition"; }
-};
-
-class Subtraction : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 2) throw runtime_error("2 operands required");
-        return operands[0] - operands[1];
-    }
-    int getOperandCount() const override { return 2; }
-    string getDescription() const override { return "Subtraction"; }
-};
-
-class Multiplication : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 2) throw runtime_error("2 operands required");
-        return operands[0] * operands[1];
-    }
-    int getOperandCount() const override { return 2; }
-    string getDescription() const override { return "Multiplication"; }
-};
-
-class Division : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 2) throw runtime_error("2 operands required");
-        if (operands[1] == 0) throw runtime_error("Division by zero!");
-        return operands[0] / operands[1];
-    }
-    int getOperandCount() const override { return 2; }
-    string getDescription() const override { return "Division"; }
-};
-
-class Modulo : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 2) throw runtime_error("2 operands required");
-        if (operands[1] == 0) throw runtime_error("Division by zero!");
-        return fmod(operands[0], operands[1]);
-    }
-    int getOperandCount() const override { return 2; }
-    string getDescription() const override { return "Modulo"; }
-};
-
-class Absolute : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 1) throw runtime_error("1 operand required");
-        return abs(operands[0]);
-    }
-    int getOperandCount() const override { return 1; }
-    string getDescription() const override { return "Absolute value"; }
-};
-
-class Square : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 1) throw runtime_error("1 operand required");
-        return operands[0] * operands[0];
-    }
-    int getOperandCount() const override { return 1; }
-    string getDescription() const override { return "Square"; }
-};
-
-class SquareRoot : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 1) throw runtime_error("1 operand required");
-        if (operands[0] < 0) throw runtime_error("Square root of negative number!");
-        return sqrt(operands[0]);
-    }
-    int getOperandCount() const override { return 1; }
-    string getDescription() const override { return "Square root"; }
-};
-
-class Logarithm : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 1) throw runtime_error("1 operand required");
-        if (operands[0] <= 0) throw runtime_error("Logarithm of non-positive number!");
-        return log(operands[0]);
-    }
-    int getOperandCount() const override { return 1; }
-    string getDescription() const override { return "Natural logarithm"; }
-};
-
-class Factorial : public Operation {
-public:
-    double execute(const vector<double>& operands) override {
-        if (operands.size() != 1) throw runtime_error("1 operand required");
-        int n = static_cast<int>(operands[0]);
-        if (n < 0) throw runtime_error("Factorial of negative number!");
-        unsigned long long result = 1;
-        for (int i = 2; i <= n; ++i) result *= i;
-        return static_cast<double>(result);
-    }
-    int getOperandCount() const override { return 1; }
-    string getDescription() const override { return "Factorial"; }
-};
-
-// Main calculator class
 class Calculator {
+public:
+    // Binary operations
+    double add(double a, double b) { 
+        return a + b; 
+    }
+    double subtract(double a, double b) {
+        return a - b; 
+    }
+    double multiply(double a, double b) {
+        return a * b; 
+    }
+    double divide(double a, double b) {
+        if (b == 0) throw runtime_error("Division by zero!");
+        return a / b;
+    }
+    double modulo(double a, double b) {
+        if (b == 0) throw runtime_error("Modulo by zero!");
+        return fmod(a, b);
+    }
+
+    // Unary operations
+    double sqr(double x) {
+        return x * x; 
+    }
+    double sqrt(double x) {
+        if (x < 0) throw runtime_error("Square root of negative number!");
+        return std::sqrt(x);
+    }
+    double log(double x) {
+        if (x <= 0) throw runtime_error("Logarithm of non-positive number!");
+        return std::log(x);
+    }
+    long long factorial(int n) {
+        if (n < 0) throw runtime_error("Factorial of negative number!");
+        long long result = 1;
+        for (int i = 2; i <= n; ++i) result *= i;
+        return result;
+    }
+};
+
+class CalculatorInterface {
 private:
-    map<char, unique_ptr<Operation>> operations;
+    Calculator calc;
+
+    void clearScreen() {
+#ifdef _WIN32
+        system("cls");
+#else
+        system("clear");
+#endif
+    }
+
+    void waitForEnter() {
+        cout << "\nPress Enter to continue...";
+        cin.ignore(10000, '\n');
+        cin.get();
+    }
+
+    void showMenu() {
+        clearScreen();
+        cout << "=== ADVANCED CALCULATOR ===\n\n"
+            << "Available operations:\n"
+            << "+  Addition\n"
+            << "-  Subtraction\n"
+            << "*  Multiplication\n"
+            << "/  Division\n"
+            << "%  Modulo\n"
+            << "s  Square\n"
+            << "q  Square root\n"
+            << "l  Logarithm\n"
+            << "!  Factorial\n"
+            << "0  Exit\n\n";
+    }
 
 public:
-    Calculator() {
-        // Register operations
-        operations['+'] = make_unique<Addition>();
-        operations['-'] = make_unique<Subtraction>();
-        operations['*'] = make_unique<Multiplication>();
-        operations['/'] = make_unique<Division>();
-        operations['%'] = make_unique<Modulo>();
-        operations['a'] = make_unique<Absolute>();
-        operations['s'] = make_unique<Square>();
-        operations['r'] = make_unique<SquareRoot>();
-        operations['l'] = make_unique<Logarithm>();
-        operations['f'] = make_unique<Factorial>();
-    }
-
-    void displayMenu() const {
-        cout << "\n=== CALCULATOR ===" << endl;
-        for (const auto& op : operations) {
-            cout << op.first << " - " << op.second->getDescription() << endl;
-        }
-        cout << "q - Exit" << endl;
-    }
-
     void run() {
-        char choice;
+        char operation;
+        double a, b;
+        int n;
 
         while (true) {
-            displayMenu();
-            cout << "\nSelect operation: ";
-            cin >> choice;
+            showMenu();
+            cout << "Choose operation: ";
+            cin >> operation;
 
-            if (choice == 'q') {
-                cout << "Goodbye!" << endl;
-                break;
-            }
-
-            auto it = operations.find(choice);
-            if (it == operations.end()) {
-                cout << "Unknown operation!" << endl;
-                continue;
-            }
+            if (operation == '0') break;
 
             try {
-                Operation* operation = it->second.get();
-                int operandCount = operation->getOperandCount();
-                vector<double> operands(operandCount);
+                clearScreen();
+                cout << "=== ADVANCED CALCULATOR ===\n\n";
 
-                for (int i = 0; i < operandCount; ++i) {
-                    cout << "Enter operand " << (i + 1) << ": ";
-                    cin >> operands[i];
+                switch (operation) {
+                case '+':
+                    cout << "ADDITION\n";
+                    cout << "Enter two numbers: ";
+                    cin >> a >> b;
+                    cout << "Result: " << a << " + " << b << " = " << calc.add(a, b) << "\n";
+                    break;
+                case '-':
+                    cout << "SUBTRACTION\n";
+                    cout << "Enter two numbers: ";
+                    cin >> a >> b;
+                    cout << "Result: " << a << " - " << b << " = " << calc.subtract(a, b) << "\n";
+                    break;
+                case '*':
+                    cout << "MULTIPLICATION\n";
+                    cout << "Enter two numbers: ";
+                    cin >> a >> b;
+                    cout << "Result: " << a << " * " << b << " = " << calc.multiply(a, b) << "\n";
+                    break;
+                case '/':
+                    cout << "DIVISION\n";
+                    cout << "Enter two numbers: ";
+                    cin >> a >> b;
+                    cout << "Result: " << a << " / " << b << " = " << calc.divide(a, b) << "\n";
+                    break;
+                case '%':
+                    cout << "MODULO\n";
+                    cout << "Enter two numbers: ";
+                    cin >> a >> b;
+                    cout << "Result: " << a << " % " << b << " = " << calc.modulo(a, b) << "\n";
+                    break;
+                case 's':
+                    cout << "SQUARE\n";
+                    cout << "Enter a number: ";
+                    cin >> a;
+                    cout << "Result: " << a << "^2 = " << calc.sqr(a) << "\n";
+                    break;
+                case 'q':
+                    cout << "SQUARE ROOT\n";
+                    cout << "Enter a number: ";
+                    cin >> a;
+                    cout << "Result: sqrt(" << a << ") = " << calc.sqrt(a) << "\n";
+                    break;
+                case 'l':
+                    cout << "LOGARITHM\n";
+                    cout << "Enter a number: ";
+                    cin >> a;
+                    cout << "Result: ln(" << a << ") = " << calc.log(a) << "\n";
+                    break;
+                case '!':
+                    cout << "FACTORIAL\n";
+                    cout << "Enter an integer: ";
+                    cin >> n;
+                    cout << "Result: " << n << "! = " << calc.factorial(n) << "\n";
+                    break;
+                default:
+                    cout << "Unknown operation!\n";
                 }
 
-                double result = operation->execute(operands);
-                cout << "Result: " << result << endl;
+                waitForEnter();
 
             }
             catch (const exception& e) {
-                cout << "Error: " << e.what() << endl;
+                clearScreen();
+                cout << "=== ADVANCED CALCULATOR ===\n\n";
+                cout << "Error: " << e.what() << "\n";
+                waitForEnter();
             }
         }
+
+        clearScreen();
+        cout << "=== ADVANCED CALCULATOR ===\n\n";
+        cout << "Thank you for using the calculator!\n";
     }
 };
 
 int main() {
-    Calculator calculator;
-    calculator.run();
+    CalculatorInterface ci;
+    ci.run();
     return 0;
 }
